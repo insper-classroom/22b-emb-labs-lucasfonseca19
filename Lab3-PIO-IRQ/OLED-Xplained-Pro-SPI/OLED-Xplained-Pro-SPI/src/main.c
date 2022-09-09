@@ -1,20 +1,20 @@
+/* -------------------------------------------------------------------------- */
+/*                                  Includes                                  */
+/* -------------------------------------------------------------------------- */
 #include <asf.h>
-
 #include "gfx_mono_ug_2832hsweg04.h"
 #include "gfx_mono_text.h"
 #include "sysfont.h"
-
 /* -------------------------------------------------------------------------- */
 /*                                   Defines                                  */
 /* -------------------------------------------------------------------------- */
 
-/* ----------------------------------- LED ---------------------------------- */
+// LED
 #define LED_PIO PIOC
 #define LED_PIO_ID ID_PIOC
 #define LED_IDX 8
 #define LED_IDX_MASK (1 << LED_IDX)
-
-/* --------------------------------- Botões --------------------------------- */
+// Botões
 #define BUT_PIO1 PIOD
 #define BUT_PIO_ID1 ID_PIOD
 #define BUT_IDX1 28
@@ -29,12 +29,16 @@
 #define BUT_PIO_ID3 ID_PIOA
 #define BUT_IDX3 19
 #define BUT_IDX_MASK3 (1 << BUT_IDX3)
+
 /* -------------------------------------------------------------------------- */
 /*                              Variávei Globais                              */
 /* -------------------------------------------------------------------------- */
 // Flag de interrupção
 volatile char but_flag;
+volatile char but_interrupt_flag;
+char long_press_flag = 0;
 int delay = 100;
+char str[128];
 /* -------------------------------------------------------------------------- */
 /*                                  Prototype                                 */
 /* -------------------------------------------------------------------------- */
@@ -46,23 +50,34 @@ void pisca_led(int n, int t);
 /* -------------------------------------------------------------------------- */
 void but_callback(void)
 {
-	if (pio_get(BUT_PIO1, PIO_INPUT, BUT_IDX_MASK1))
-	{
-		but_flag = 1;
-	}
-	else
-	{
+	if (pio_get(BUT_PIO1, PIO_INPUT, BUT_IDX_MASK1)) {
 		but_flag = 0;
+	}
+	else{
+		but_flag = 1;
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                   Funções                                  */
-/* -------------------------------------------------------------------------- */
-void pisca_led(int n, int t)
+void but_callback2(void){ // interrompe piscada
+	if (but_interrupt_flag == 0){
+		but_interrupt_flag = 1;
+	}
+	else{
+		but_interrupt_flag = 0;
+	}
+	
+	
+}
+void but_callback3(void){
+
+}/* -------------------------------------------------------------------------- */
+	/*                                   Funções                                  */
+	/* -------------------------------------------------------------------------- */
+	void pisca_led(int n, int t)
 {
 	for (int i = 0; i < n; i++)
 	{
+		
 		pio_clear(LED_PIO, LED_IDX_MASK);
 		delay_ms(t);
 		pio_set(LED_PIO, LED_IDX_MASK);
@@ -81,12 +96,16 @@ void io_init(void)
 	// Inicializa clock do periférico PIO responsavel pelo botao
 	pmc_enable_periph_clk(BUT_PIO_ID1);
 	pmc_enable_periph_clk(BUT_PIO_ID2);
+	pmc_enable_periph_clk(BUT_PIO_ID3);
+
 	// Configura PIO para lidar com o pino do botão como entrada
 	// com pull-up
 	pio_configure(BUT_PIO1, PIO_INPUT, BUT_IDX_MASK1, PIO_PULLUP | PIO_DEBOUNCE);
 	pio_set_debounce_filter(BUT_PIO1, BUT_IDX_MASK1, 60);
 	pio_configure(BUT_PIO2, PIO_INPUT, BUT_IDX_MASK2, PIO_PULLUP | PIO_DEBOUNCE);
 	pio_set_debounce_filter(BUT_PIO2, BUT_IDX_MASK2, 60);
+	pio_configure(BUT_PIO3, PIO_INPUT, BUT_IDX_MASK3, PIO_PULLUP | PIO_DEBOUNCE);
+	pio_set_debounce_filter(BUT_PIO3, BUT_IDX_MASK3, 60);
 
 	// Configura interrupção no pino referente ao botao e associa
 	// função de callback caso uma interrupção for gerada
@@ -99,48 +118,82 @@ void io_init(void)
 	pio_handler_set(BUT_PIO2,
 					BUT_PIO_ID2,
 					BUT_IDX_MASK2,
-					PIO_IT_EDGE,
+					PIO_IT_FALL_EDGE,
 					but_callback2);
+	pio_handler_set(BUT_PIO3,
+					BUT_PIO_ID3,
+					BUT_IDX_MASK3,
+					PIO_IT_FALL_EDGE,
+					but_callback3);
 
 	// Ativa interrupção e limpa primeira IRQ gerada na ativacao
 	pio_enable_interrupt(BUT_PIO1, BUT_IDX_MASK1);
 	pio_get_interrupt_status(BUT_PIO1);
 	pio_enable_interrupt(BUT_PIO2, BUT_IDX_MASK2);
 	pio_get_interrupt_status(BUT_PIO2);
+	pio_enable_interrupt(BUT_PIO3, BUT_IDX_MASK3);
+	pio_get_interrupt_status(BUT_PIO3);
+
 	// Configura NVIC para receber interrupcoes do PIO do botao
 	// com prioridade 4 (quanto mais próximo de 0 maior)
 	NVIC_EnableIRQ(BUT_PIO_ID1);
-	NVIC_SetPriority(BUT_PIO_ID1, 4); // Prioridade 4
+	NVIC_SetPriority(BUT_PIO_ID1, 4);
 	NVIC_EnableIRQ(BUT_PIO_ID2);
-	NVIC_SetPriority(BUT_PIO_ID2, 4);
+	NVIC_SetPriority(BUT_PIO_ID2, 0);
+	NVIC_EnableIRQ(BUT_PIO_ID3);
+	NVIC_SetPriority(BUT_PIO_ID3, 4);
+
 }
 
-/* ---------------------------------- MAIN ---------------------------------- */
 int main(void)
 {
 	board_init();
 	sysclk_init();
 	delay_init();
+	WDT->WDT_MR = WDT_MR_WDDIS;
 	io_init();
 
 	// Init OLED
 	gfx_mono_ssd1306_init();
-	gfx_mono_draw_string("cu", 50, 16, &sysfont);
+	sprintf(str, "%d", delay);
+	gfx_mono_draw_string("Freq:", 0, 16, &sysfont);
 	/* Insert application code here, after the board has been initialized. */
 	while (1)
 	{
-		char str[128];
-		// Se usuario aperta e solta
-		if (!but_flag)
-		{
-			delay = delay + 1000;
-			sprintf(str, "%d", delay);
-			gfx_mono_draw_string("Buceta", 0, 0, &sysfont);
-			pisca_led(3, delay);
+		
+		
+		
+		if (but_flag)
+		{	
+			delay_ms(500);
+			if (but_flag)
+			{
+				sprintf(str, "%d", delay);
+				gfx_mono_draw_string(str, 64, 16, &sysfont);
+				delay += 100;
+				sprintf(str, "%d", delay);
+				gfx_mono_draw_string(str, 64, 16, &sysfont);
+				but_flag = 0;
+			}
+			else
+			{
+				delay -= 100;
+				sprintf(str, "%d", delay);
+				gfx_mono_draw_string(str, 64, 16, &sysfont);
+				but_flag = 0;
+			}
 			but_flag = 0;
+			sprintf(str, "%d", delay);
+			gfx_mono_draw_string(str, 64, 16, &sysfont);
+			
 		}
-
-		// Enter sleep mode
-		pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
+		if (!but_flag && !but_interrupt_flag)
+		{
+			pisca_led(1, delay);
+	
+		}
+	
+			
+	
 	}
 }
