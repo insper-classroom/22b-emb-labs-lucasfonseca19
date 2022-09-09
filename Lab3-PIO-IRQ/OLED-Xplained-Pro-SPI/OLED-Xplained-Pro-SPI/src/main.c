@@ -36,6 +36,7 @@
 // Flag de interrupção
 volatile char but_flag;
 volatile char but_interrupt_flag;
+volatile char but_flag_diminui;
 char long_press_flag = 0;
 int delay = 100;
 char str[128];
@@ -65,14 +66,14 @@ void but_callback2(void){ // interrompe piscada
 	else{
 		but_interrupt_flag = 0;
 	}
-	
-	
+
 }
 void but_callback3(void){
-
-}/* -------------------------------------------------------------------------- */
-	/*                                   Funções                                  */
-	/* -------------------------------------------------------------------------- */
+	but_flag_diminui = 1;
+}
+/* -------------------------------------------------------------------------- */
+/*                                   Funções                                  */
+/* -------------------------------------------------------------------------- */
 	void pisca_led(int n, int t)
 {
 	for (int i = 0; i < n; i++)
@@ -141,7 +142,7 @@ void io_init(void)
 	NVIC_EnableIRQ(BUT_PIO_ID2);
 	NVIC_SetPriority(BUT_PIO_ID2, 0);
 	NVIC_EnableIRQ(BUT_PIO_ID3);
-	NVIC_SetPriority(BUT_PIO_ID3, 4);
+	NVIC_SetPriority(BUT_PIO_ID3, 3);
 
 }
 
@@ -187,11 +188,20 @@ int main(void)
 			gfx_mono_draw_string(str, 64, 16, &sysfont);
 			
 		}
+		if (but_flag_diminui)
+		{
+			delay -= 100;
+			but_flag_diminui = 0;
+		}
+		
+		sprintf(str, "%d", delay);
+		gfx_mono_draw_string(str, 64, 16, &sysfont);
 		if (!but_flag && !but_interrupt_flag)
 		{
 			pisca_led(1, delay);
 	
 		}
+		
 	
 			
 	
