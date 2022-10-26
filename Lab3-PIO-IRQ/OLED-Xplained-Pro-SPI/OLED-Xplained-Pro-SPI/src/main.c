@@ -74,7 +74,7 @@ void but_callback3(void){
 /* -------------------------------------------------------------------------- */
 /*                                   Funções                                  */
 /* -------------------------------------------------------------------------- */
-	void pisca_led(int n, int t)
+void pisca_led(int n, int t)
 {
 	for (int i = 0; i < n; i++)
 	{
@@ -199,7 +199,7 @@ int main(void)
 		if (!but_flag && !but_interrupt_flag)
 		{
 			pisca_led(1, delay);
-	
+	''
 		}
 		
 	
