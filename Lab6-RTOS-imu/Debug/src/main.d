@@ -201,7 +201,13 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  ../src/oled/gfx_mono_generic.h ../src/oled/gfx_mono_framebuffer.h \
  ../src/oled/gfx_mono_text.h ../src/oled/sysfont.h \
  ../src/config/conf_sysfont.h ../src/oled/gfx_mono_text.h \
- ../src/mcu6050.h
+ ../src/mcu6050.h ../src/Fusion-1.0.6/Fusion/Fusion.h \
+ ../src/Fusion-1.0.6/Fusion/FusionAhrs.h \
+ ../src/Fusion-1.0.6/Fusion/FusionMath.h \
+ ../src/Fusion-1.0.6/Fusion/FusionAxes.h \
+ ../src/Fusion-1.0.6/Fusion/FusionCalibration.h \
+ ../src/Fusion-1.0.6/Fusion/FusionCompass.h \
+ ../src/Fusion-1.0.6/Fusion/FusionOffset.h
 
 ../src/asf.h:
 
@@ -634,3 +640,17 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/oled/gfx_mono_text.h:
 
 ../src/mcu6050.h:
+
+../src/Fusion-1.0.6/Fusion/Fusion.h:
+
+../src/Fusion-1.0.6/Fusion/FusionAhrs.h:
+
+../src/Fusion-1.0.6/Fusion/FusionMath.h:
+
+../src/Fusion-1.0.6/Fusion/FusionAxes.h:
+
+../src/Fusion-1.0.6/Fusion/FusionCalibration.h:
+
+../src/Fusion-1.0.6/Fusion/FusionCompass.h:
+
+../src/Fusion-1.0.6/Fusion/FusionOffset.h:
